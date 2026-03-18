@@ -1,0 +1,39 @@
+{
+  "name": "nodejs-library-system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/libraryApp.js",
+  "scripts": {
+    "start": "node src/libraryApp.js",
+    "dev": "nodemon src/libraryApp.js",
+    "migrate": "knex migrate:latest --knexfile knexfile.js",
+    "reset-db": "knex migrate:rollback --knexfile knexfile.js && knex migrate:latest --knexfile knexfile.js",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "setup": "npm run docker:up && npm run migrate",
+    "start:docker": "npm run setup && npm start",
+    "smoke": "node scripts/smoke.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hagerosama/nodejs-library-system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hagerosama/nodejs-library-system/issues"
+  },
+  "homepage": "https://github.com/hagerosama/nodejs-library-system#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "knex": "^3.1.0",
+    "mysql2": "^3.20.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
