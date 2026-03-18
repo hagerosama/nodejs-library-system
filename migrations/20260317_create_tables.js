@@ -45,5 +45,5 @@ exports.up = function (knex) {
 };
 
 exports.down = function (knex) {
-  return knex.schema.dropTableIfExists('loans').dropTableIfExists('borrowers').dropTableIfExists('books');
+  return knex.schema.dropTableIfExists('checkouts').dropTableIfExists('borrowers').dropTableIfExists('books');
 };

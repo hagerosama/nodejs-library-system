@@ -7,32 +7,6 @@ const TABLES = {
   checkouts: 'checkouts',
 };
 
-function mapBook(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    title: row.title,
-    author: row.author,
-    isbn: row.isbn,
-    quantity: row.quantity,
-    shelfLocation: row.shelf_location,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-function mapBorrower(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    registeredAt: row.registered_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
 function mapCheckout(row) {
   if (!row) return null;
   return {
@@ -45,84 +19,6 @@ function mapCheckout(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-}
-
-async function getAllBooks() {
-  const rows = await knex(TABLES.books).select('*');
-  return rows.map(mapBook);
-}
-
-async function getBookById(id) {
-  const row = await knex(TABLES.books).where({ id }).first();
-  return mapBook(row);
-}
-
-async function createBook(payload) {
-  const [id] = await knex(TABLES.books).insert({
-    title: payload.title,
-    author: payload.author,
-    isbn: payload.isbn,
-    quantity: payload.quantity || 0,
-    shelf_location: payload.shelfLocation || '',
-  });
-
-  return getBookById(id);
-}
-
-async function updateBook(id, payload) {
-  const update = {};
-  if (payload.title !== undefined) update.title = payload.title;
-  if (payload.author !== undefined) update.author = payload.author;
-  if (payload.isbn !== undefined) update.isbn = payload.isbn;
-  if (payload.quantity !== undefined) update.quantity = Number(payload.quantity);
-  if (payload.shelfLocation !== undefined) update.shelf_location = payload.shelfLocation;
-  if (!Object.keys(update).length) return getBookById(id);
-
-  await knex(TABLES.books).where({ id }).update({ ...update, updated_at: knex.fn.now() });
-  return getBookById(id);
-}
-
-async function deleteBook(id) {
-  const book = await getBookById(id);
-  if (!book) return null;
-  await knex(TABLES.books).where({ id }).del();
-  return book;
-}
-
-async function getAllBorrowers() {
-  const rows = await knex(TABLES.borrowers).select('*');
-  return rows.map(mapBorrower);
-}
-
-async function getBorrowerById(id) {
-  const row = await knex(TABLES.borrowers).where({ id }).first();
-  return mapBorrower(row);
-}
-
-async function createBorrower(payload) {
-  const [id] = await knex(TABLES.borrowers).insert({
-    name: payload.name,
-    email: payload.email,
-    registered_at: knex.fn.now(),
-  });
-  return getBorrowerById(id);
-}
-
-async function updateBorrower(id, payload) {
-  const update = {};
-  if (payload.name !== undefined) update.name = payload.name;
-  if (payload.email !== undefined) update.email = payload.email;
-  if (!Object.keys(update).length) return getBorrowerById(id);
-
-  await knex(TABLES.borrowers).where({ id }).update({ ...update, updated_at: knex.fn.now() });
-  return getBorrowerById(id);
-}
-
-async function deleteBorrower(id) {
-  const borrower = await getBorrowerById(id);
-  if (!borrower) return null;
-  await knex(TABLES.borrowers).where({ id }).del();
-  return borrower;
 }
 
 async function getCheckoutsByBorrower(borrowerId, { activeOnly = false, overdueOnly = false } = {}) {
@@ -209,16 +105,6 @@ async function returnBook({ borrowerId, bookId }) {
 }
 
 module.exports = {
-  getAllBooks,
-  getBookById,
-  createBook,
-  updateBook,
-  deleteBook,
-  getAllBorrowers,
-  getBorrowerById,
-  createBorrower,
-  updateBorrower,
-  deleteBorrower,
   getCheckoutsByBorrower,
   checkoutBook,
   returnBook,

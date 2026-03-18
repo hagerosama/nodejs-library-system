@@ -1,31 +1,57 @@
 const express = require('express');
-const libraryRepo = require('../repository/libraryRepository');
+const borrowerRepository = require('../repository/borrowerRepository');
+const checkoutRepository = require('../repository/checkoutRepository');
 const asyncHandler = require('../facade/asyncHandler');
+const authMiddleware = require('../facade/authorizer');
+const { generateToken } = require('../utils/jwtUtil');
+const { HttpError } = require('../models/errors');
 const {
   parseIdParam,
   validateBorrowerCreate,
   validateBorrowerUpdate,
   validateCheckout,
   validateReturn,
-} = require('../facade/validator');
+} = require('../utils/validator');
 
 const router = express.Router();
 
-// List all borrowers
+// LOGIN: Get JWT token (public endpoint)
+router.post(
+  '/auth/login',
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    
+    if (!email) {
+      throw new HttpError('Email is required', 400);
+    }
+    
+    // Simple authentication: just verify the borrower exists
+    // In production, use bcrypt to hash and compare passwords
+    const borrower = await borrowerRepository.getBorrowerByEmail(email);
+    if (!borrower) {
+      throw new HttpError('Invalid email or borrower not found', 401);
+    }
+    
+    const token = generateToken(borrower.id, borrower.email);
+    res.json({ token, borrower: { id: borrower.id, name: borrower.name, email: borrower.email } });
+  }),
+);
+
+// List all borrowers (public)
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const borrowers = await libraryRepo.getAllBorrowers();
+    const borrowers = await borrowerRepository.getAllBorrowers();
     res.json(borrowers);
   }),
 );
 
-// Retrieve a borrower by id
+// Retrieve a borrower by id (public)
 router.get(
   '/:id',
   parseIdParam('id'),
   asyncHandler(async (req, res) => {
-    const borrower = await libraryRepo.getBorrowerById(req.params.id);
+    const borrower = await borrowerRepository.getBorrowerById(req.params.id);
     if (!borrower) {
       return res.status(404).json({ message: 'Borrower not found' });
     }
@@ -33,23 +59,29 @@ router.get(
   }),
 );
 
-// Add borrower
+// Add borrower (protected)
 router.post(
   '/',
   validateBorrowerCreate,
   asyncHandler(async (req, res) => {
-    const borrower = await libraryRepo.createBorrower(req.body);
+    const borrower = await borrowerRepository.createBorrower(req.body);
     res.status(201).json(borrower);
   }),
 );
 
-// Update a borrower
+// Update a borrower (protected)
 router.put(
   '/:id',
+  authMiddleware,
   parseIdParam('id'),
   validateBorrowerUpdate,
   asyncHandler(async (req, res) => {
-    const borrower = await libraryRepo.updateBorrower(req.params.id, req.body);
+    // Borrower can only update their own profile
+    if (req.borrower.id !== req.params.id) {
+      throw new HttpError('You can only update your own profile', 403);
+    }
+    
+    const borrower = await borrowerRepository.updateBorrower(req.params.id, req.body);
     if (!borrower) {
       return res.status(404).json({ message: 'Borrower not found' });
     }
@@ -57,12 +89,18 @@ router.put(
   }),
 );
 
-// Delete a borrower
+// Delete a borrower (protected)
 router.delete(
   '/:id',
+  authMiddleware,
   parseIdParam('id'),
   asyncHandler(async (req, res) => {
-    const borrower = await libraryRepo.deleteBorrower(req.params.id);
+    // Borrower can only delete their own account
+    if (req.borrower.id !== req.params.id) {
+      throw new HttpError('You can only delete your own account', 403);
+    }
+    
+    const borrower = await borrowerRepository.deleteBorrower(req.params.id);
     if (!borrower) {
       return res.status(404).json({ message: 'Borrower not found' });
     }
@@ -70,13 +108,19 @@ router.delete(
   }),
 );
 
-// Checkout a book
+// Checkout a book (protected)
 router.post(
   '/:id/checkout',
+  authMiddleware,
   parseIdParam('id'),
   validateCheckout,
   asyncHandler(async (req, res) => {
-    const result = await libraryRepo.checkoutBook({
+    // Borrower can only checkout for themselves
+    if (req.borrower.id !== req.params.id) {
+      throw new HttpError('You can only checkout books for yourself', 403);
+    }
+    
+    const result = await checkoutRepository.checkoutBook({
       borrowerId: req.params.id,
       bookId: req.body.bookId,
       dueDate: req.body.dueDate,
@@ -85,19 +129,45 @@ router.post(
   }),
 );
 
-// Return a book
+// Return a book (protected)
 router.post(
   '/:id/return',
+  authMiddleware,
   parseIdParam('id'),
   validateReturn,
   asyncHandler(async (req, res) => {
-    const result = await libraryRepo.returnBook({
+    // Borrower can only return books for themselves
+    if (req.borrower.id !== req.params.id) {
+      throw new HttpError('You can only return books for yourself', 403);
+    }
+    
+    const result = await checkoutRepository.returnBook({
       borrowerId: req.params.id,
       bookId: req.body.bookId,
     });
     res.json(result);
   }),
 );
+
+// List all checkouts for a borrower (public)
+router.get(
+  '/:id/checkouts',
+  parseIdParam('id'),
+  asyncHandler(async (req, res) => {
+    const borrower = await borrowerRepository.getBorrowerById(req.params.id);
+    if (!borrower) {
+      return res.status(404).json({ message: 'Borrower not found' });
+    }
+
+    const activeOnly = req.query.active === 'true';
+    const overdueOnly = req.query.overdue === 'true';
+
+    const checkouts = await checkoutRepository.getCheckoutsByBorrower(req.params.id, { activeOnly, overdueOnly });
+    res.json(checkouts);
+  }),
+);
+
+module.exports = router;
 
 // List all checkouts for a borrower
 router.get(
