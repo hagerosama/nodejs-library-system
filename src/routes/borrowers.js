@@ -37,7 +37,36 @@ router.post(
   }),
 );
 
-// List all borrowers (public)
+router.post(
+  '/auth/signup',
+  asyncHandler(async (req, res) => {
+    const { name, email } = req.body;
+    
+    if (!name || !email) {
+      throw new HttpError('Name and email are required', 400);
+    }
+    
+    const existingBorrower = await borrowerRepository.getBorrowerByEmail(email);
+    if (existingBorrower) {
+      throw new HttpError('Email already registered', 409);
+    }
+    
+    const borrower = await borrowerRepository.createBorrower({ name, email });
+    
+    const token = generateToken(borrower.id, borrower.email);
+    
+    res.status(201).json({ 
+      token, 
+      borrower: { 
+        id: borrower.id, 
+        name: borrower.name, 
+        email: borrower.email 
+      } 
+    });
+  }),
+);
+
+// List all borrowers
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -46,7 +75,7 @@ router.get(
   }),
 );
 
-// Retrieve a borrower by id (public)
+// Retrieve a borrower by id 
 router.get(
   '/:id',
   parseIdParam('id'),
@@ -59,7 +88,7 @@ router.get(
   }),
 );
 
-// Add borrower (protected)
+// Add borrower 
 router.post(
   '/',
   validateBorrowerCreate,
@@ -69,7 +98,7 @@ router.post(
   }),
 );
 
-// Update a borrower (protected)
+// Update a borrower 
 router.put(
   '/:id',
   authMiddleware,
@@ -89,7 +118,7 @@ router.put(
   }),
 );
 
-// Delete a borrower (protected)
+// Delete a borrower 
 router.delete(
   '/:id',
   authMiddleware,
@@ -108,7 +137,7 @@ router.delete(
   }),
 );
 
-// Checkout a book (protected)
+// Checkout a book 
 router.post(
   '/:id/checkout',
   authMiddleware,
@@ -129,7 +158,7 @@ router.post(
   }),
 );
 
-// Return a book (protected)
+// Return a book 
 router.post(
   '/:id/return',
   authMiddleware,
@@ -149,7 +178,7 @@ router.post(
   }),
 );
 
-// List all checkouts for a borrower (public)
+// List all checkouts for a borrower
 router.get(
   '/:id/checkouts',
   parseIdParam('id'),
@@ -163,26 +192,6 @@ router.get(
     const overdueOnly = req.query.overdue === 'true';
 
     const checkouts = await checkoutRepository.getCheckoutsByBorrower(req.params.id, { activeOnly, overdueOnly });
-    res.json(checkouts);
-  }),
-);
-
-module.exports = router;
-
-// List all checkouts for a borrower
-router.get(
-  '/:id/checkouts',
-  parseIdParam('id'),
-  asyncHandler(async (req, res) => {
-    const borrower = await libraryRepo.getBorrowerById(req.params.id);
-    if (!borrower) {
-      return res.status(404).json({ message: 'Borrower not found' });
-    }
-
-    const activeOnly = req.query.active === 'true';
-    const overdueOnly = req.query.overdue === 'true';
-
-    const checkouts = await libraryRepo.getCheckoutsByBorrower(req.params.id, { activeOnly, overdueOnly });
     res.json(checkouts);
   }),
 );
