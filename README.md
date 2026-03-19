@@ -81,6 +81,47 @@ The API will run at: http://localhost:3000
 
 ---
 
+## Database Schema
+
+```mermaid
+erDiagram
+    BOOKS ||--o{ CHECKOUTS : "has many"
+    BORROWERS ||--o{ CHECKOUTS : "has many"
+    
+    BOOKS {
+        int id PK
+        string title
+        string author
+        string isbn UK
+        int quantity
+        string shelf_location
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    BORROWERS {
+        int id PK
+        string name
+        string email UK
+        timestamp registered_at
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    CHECKOUTS {
+        int id PK
+        int borrower_id FK
+        int book_id FK
+        timestamp borrowed_at
+        timestamp due_at
+        timestamp returned_at "nullable"
+        timestamp created_at
+        timestamp updated_at
+    }
+```
+
+---
+
 ## Helper scripts
 
 | Script | What it does |
