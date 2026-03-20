@@ -1,6 +1,6 @@
 const express = require('express');
-const booksRouter = require('./routes/books');
-const borrowersRouter = require('./routes/borrowers');
+const booksRouter = require('./routes/booksRouter');
+const borrowersRouter = require('./routes/borrowersRouter');
 const errorHandler = require('./errorhandler/errorHandler');
 
 const app = express();
@@ -10,7 +10,7 @@ app.use(express.json());
 
 app.get('/', (req, res) => {
   res.send(
-    'Library system API is running. Use /library/books and /library/borrowers to manage resources.',
+    'Library system API is running ..',
   );
 });
 

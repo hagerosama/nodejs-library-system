@@ -1,12 +1,12 @@
 const express = require('express');
 const bookRepository = require('../repository/bookRepository');
 const asyncHandler = require('../facade/asyncHandler');
-const authMiddleware = require('../facade/authorizer');
+const authorizer = require('../facade/authorizer');
 const { parseIdParam, validateBookCreate, validateBookUpdate } = require('../utils/validator');
 
 const router = express.Router();
 
-// List all books (public)
+// List all books
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -15,7 +15,7 @@ router.get(
   }),
 );
 
-// Retrieve a book by id (public)
+// Retrieve a book by id 
 router.get(
   '/:id',
   parseIdParam('id'),
@@ -28,10 +28,10 @@ router.get(
   }),
 );
 
-// Create a new book (protected)
+// Create a new book 
 router.post(
   '/',
-  authMiddleware,
+  authorizer,
   validateBookCreate,
   asyncHandler(async (req, res) => {
     const book = await bookRepository.createBook(req.body);
@@ -39,10 +39,10 @@ router.post(
   }),
 );
 
-// Update a book (protected)
+// Update a book
 router.put(
   '/:id',
-  authMiddleware,
+  authorizer,
   parseIdParam('id'),
   validateBookUpdate,
   asyncHandler(async (req, res) => {
@@ -54,10 +54,10 @@ router.put(
   }),
 );
 
-// Delete a book (protected)
+// Delete a book
 router.delete(
   '/:id',
-  authMiddleware,
+  authorizer,
   parseIdParam('id'),
   asyncHandler(async (req, res) => {
     const book = await bookRepository.deleteBook(req.params.id);

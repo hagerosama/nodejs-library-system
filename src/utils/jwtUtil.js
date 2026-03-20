@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { HttpError } = require('../models/errors');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'secret-key';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
 
 function generateToken(borrowerId, email) {
@@ -26,7 +26,7 @@ function extractTokenFromHeader(req) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new HttpError('Missing or invalid authorization header', 401);
   }
-  return authHeader.slice(7); // Remove 'Bearer ' prefix
+  return authHeader.slice(7);
 }
 
 module.exports = {

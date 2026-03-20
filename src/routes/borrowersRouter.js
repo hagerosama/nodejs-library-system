@@ -2,7 +2,7 @@ const express = require('express');
 const borrowerRepository = require('../repository/borrowerRepository');
 const checkoutRepository = require('../repository/checkoutRepository');
 const asyncHandler = require('../facade/asyncHandler');
-const authMiddleware = require('../facade/authorizer');
+const authorizer = require('../facade/authorizer');
 const { generateToken } = require('../utils/jwtUtil');
 const { HttpError } = require('../models/errors');
 const {
@@ -15,7 +15,7 @@ const {
 
 const router = express.Router();
 
-// LOGIN: Get JWT token (public endpoint)
+// LOGIN
 router.post(
   '/auth/login',
   asyncHandler(async (req, res) => {
@@ -25,8 +25,6 @@ router.post(
       throw new HttpError('Email is required', 400);
     }
     
-    // Simple authentication: just verify the borrower exists
-    // In production, use bcrypt to hash and compare passwords
     const borrower = await borrowerRepository.getBorrowerByEmail(email);
     if (!borrower) {
       throw new HttpError('Invalid email or borrower not found', 401);
@@ -37,6 +35,7 @@ router.post(
   }),
 );
 
+// SIGN UP
 router.post(
   '/auth/signup',
   asyncHandler(async (req, res) => {
@@ -101,11 +100,10 @@ router.post(
 // Update a borrower 
 router.put(
   '/:id',
-  authMiddleware,
+  authorizer,
   parseIdParam('id'),
   validateBorrowerUpdate,
   asyncHandler(async (req, res) => {
-    // Borrower can only update their own profile
     if (req.borrower.id !== req.params.id) {
       throw new HttpError('You can only update your own profile', 403);
     }
@@ -121,10 +119,9 @@ router.put(
 // Delete a borrower 
 router.delete(
   '/:id',
-  authMiddleware,
+  authorizer,
   parseIdParam('id'),
   asyncHandler(async (req, res) => {
-    // Borrower can only delete their own account
     if (req.borrower.id !== req.params.id) {
       throw new HttpError('You can only delete your own account', 403);
     }
@@ -140,11 +137,10 @@ router.delete(
 // Checkout a book 
 router.post(
   '/:id/checkout',
-  authMiddleware,
+  authorizer,
   parseIdParam('id'),
   validateCheckout,
   asyncHandler(async (req, res) => {
-    // Borrower can only checkout for themselves
     if (req.borrower.id !== req.params.id) {
       throw new HttpError('You can only checkout books for yourself', 403);
     }
@@ -161,11 +157,10 @@ router.post(
 // Return a book 
 router.post(
   '/:id/return',
-  authMiddleware,
+  authorizer,
   parseIdParam('id'),
   validateReturn,
   asyncHandler(async (req, res) => {
-    // Borrower can only return books for themselves
     if (req.borrower.id !== req.params.id) {
       throw new HttpError('You can only return books for yourself', 403);
     }
