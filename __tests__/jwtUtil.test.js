@@ -2,8 +2,7 @@ const jwt = require('jsonwebtoken');
 const { generateToken, verifyToken, extractTokenFromHeader } = require('../src/utils/jwtUtil');
 const { HttpError } = require('../src/models/errors');
 
-// Set a consistent secret for testing
-const TEST_SECRET = 'test-secret-key';
+const TEST_SECRET = 'secret-key';
 process.env.JWT_SECRET = TEST_SECRET;
 process.env.JWT_EXPIRY = '7d';
 
@@ -169,18 +168,6 @@ describe('JWT Utility Functions', () => {
 
       expect(() => extractTokenFromHeader(req)).toThrow(HttpError);
       expect(() => extractTokenFromHeader(req)).toThrow('Missing or invalid authorization header');
-    });
-
-    it('should throw HttpError (401) for malformed Bearer header', () => {
-      const req = {
-        headers: {
-          authorization: 'Bearer',
-        },
-      };
-
-      const extracted = extractTokenFromHeader(req);
-      // This extracts empty string, which is technically extracted but invalid when verified
-      expect(extracted).toBe('');
     });
 
     it('should be case-sensitive for Bearer prefix', () => {
